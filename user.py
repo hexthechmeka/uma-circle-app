@@ -8,27 +8,43 @@ from textwrap import dedent
 FIXED_SHEET_URL = "https://docs.google.com/spreadsheets/d/18iVfULr8tjVB8FvZ1yfMuZhua2EDxRuwfut9k201_tI/edit?gid=19537121#gid=19537121"
 TARGET_GROWTH = 10000000 
 
-st.set_page_config(page_title="서클 현황", layout="wide")
+st.set_page_config(page_title="서클 현황", layout="wide", initial_sidebar_state="collapsed")
 
+# 🚨 [핵심] 모든 메뉴와 푸터, 헤더를 숨기는 강력한 CSS
 st.markdown("""
 <style>
-header, footer, #MainMenu {visibility: hidden;}
-.stApp { background-color: #121212; color: #E0E0E0; }
-.user-card { background-color: #1E1E1E; border: 1px solid #333; border-radius: 16px; padding: 24px; margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.5); --prog-width: 0%; --prog-color: #555; }
-.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.user-name { font-size: 24px; font-weight: 700; color: #FFFFFF; }
-.status-badge { padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; color: #fff; background-color: var(--prog-color); }
-.text-dark { color: #000 !important; }
-.progress-track { background-color: #333; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
-.progress-fill { height: 100%; transition: width 0.6s ease; width: var(--prog-width); background-color: var(--prog-color); }
-.progress-text { text-align: right; font-size: 12px; color: #888; margin-bottom: 20px; }
-.stat-row { display: flex; justify-content: space-between; border-top: 1px solid #333; padding-top: 16px; }
-.stat-item { display: flex; flex-direction: column; }
-.stat-label { font-size: 12px; color: #AAA; margin-bottom: 4px; }
-.stat-value { font-size: 18px; font-weight: 700; color: #FFF; }
-.stat-right { text-align: right; }
-.update-info { margin-top: 15px; text-align: right; font-size: 11px; color: #666; font-style: italic; }
-div.stButton > button { width: 100%; background-color: #2C2C2C; color: white; border: 1px solid #444; padding: 12px; border-radius: 8px; }
+    /* 1. 상단 헤더(햄버거 메뉴 포함) 숨기기 */
+    header[data-testid="stHeader"] {
+        visibility: hidden;
+        height: 0px;
+    }
+    
+    /* 2. 우측 상단 햄버거 메뉴, 배포 버튼 등 숨기기 */
+    #MainMenu {visibility: hidden;}
+    .stDeployButton {display:none;}
+    
+    /* 3. 하단 푸터 (Made with Streamlit) 숨기기 */
+    footer {visibility: hidden;}
+    
+    /* 4. 앱 배경 및 폰트 설정 */
+    .stApp { background-color: #121212; color: #E0E0E0; }
+    
+    /* 5. 카드 UI 디자인 */
+    .user-card { background-color: #1E1E1E; border: 1px solid #333; border-radius: 16px; padding: 24px; margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.5); --prog-width: 0%; --prog-color: #555; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .user-name { font-size: 24px; font-weight: 700; color: #FFFFFF; }
+    .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; color: #fff; background-color: var(--prog-color); }
+    .text-dark { color: #000 !important; }
+    .progress-track { background-color: #333; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
+    .progress-fill { height: 100%; transition: width 0.6s ease; width: var(--prog-width); background-color: var(--prog-color); }
+    .progress-text { text-align: right; font-size: 12px; color: #888; margin-bottom: 20px; }
+    .stat-row { display: flex; justify-content: space-between; border-top: 1px solid #333; padding-top: 16px; }
+    .stat-item { display: flex; flex-direction: column; }
+    .stat-label { font-size: 12px; color: #AAA; margin-bottom: 4px; }
+    .stat-value { font-size: 18px; font-weight: 700; color: #FFF; }
+    .stat-right { text-align: right; }
+    .update-info { margin-top: 15px; text-align: right; font-size: 11px; color: #666; font-style: italic; }
+    div.stButton > button { width: 100%; background-color: #2C2C2C; color: white; border: 1px solid #444; padding: 12px; border-radius: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -72,7 +88,6 @@ def load_data():
                 
                 for col_i in range(len(headers) - 1, -1, -1):
                     if headers[col_i].strip() == "닉네임": continue
-                    
                     has_data = False
                     for row in data_rows:
                         if len(row) > col_i and str(row[col_i]).strip() != "":
@@ -90,7 +105,6 @@ def load_data():
                             my_last_date = headers[col_i]
                             break
                     user_date_map[nickname] = my_last_date
-
         except Exception:
             global_date = "-"
         

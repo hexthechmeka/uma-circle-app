@@ -109,7 +109,7 @@ def show_home():
 def show_list():
     st.title("전체 랭킹")
     if df.empty: return
-        st.caption(f"데이터 기준: {last_update_date}")
+    st.caption(f"데이터 기준: {last_update_date}")
     tab1, tab2 = st.tabs(["이번달 팬수 순", "총 팬 수 순"])
     with tab1: st.dataframe(df.sort_values('이번달 팬수', ascending=False)[['닉네임', '이번달 팬수']], use_container_width=True, hide_index=True)
     with tab2: st.dataframe(df.sort_values('현재 팬 수', ascending=False)[['닉네임', '현재 팬 수']], use_container_width=True, hide_index=True)
@@ -121,3 +121,4 @@ c1, c2 = st.columns(2)
 if c1.button("홈 (검색)"): st.session_state.page = 'home'; st.rerun()
 
 if c2.button("랭킹 보기"): st.session_state.page = 'list'; st.rerun()
+

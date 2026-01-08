@@ -27,6 +27,7 @@ header, footer, #MainMenu {visibility: hidden;}
 .stat-label { font-size: 12px; color: #AAA; margin-bottom: 4px; }
 .stat-value { font-size: 18px; font-weight: 700; color: #FFF; }
 .stat-right { text-align: right; }
+.update-info { margin-top: 15px; text-align: right; font-size: 11px; color: #666; font-style: italic; }
 div.stButton > button { width: 100%; background-color: #2C2C2C; color: white; border: 1px solid #444; padding: 12px; border-radius: 8px; }
 </style>
 """, unsafe_allow_html=True)
@@ -36,7 +37,7 @@ if 'page' not in st.session_state: st.session_state.page = 'home'
 @st.cache_data(ttl=600)
 def load_data():
     try:
-        # [수정] Secrets에서 인증 정보 가져오기
+        
         if "gcp_service_account" in st.secrets:
             creds = service_account.Credentials.from_service_account_info(st.secrets["gcp_service_account"])
             scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -51,6 +52,12 @@ def load_data():
         ws = gc.open_by_url(FIXED_SHEET_URL).worksheet("1.메인_요약")
         data = ws.get_all_records()
         df = pd.DataFrame(data)
+        try:
+            ws_daily = sh.worksheet("2.일간_전체")
+            headers = ws_daily.row_values(1)
+            last_date = headers[-1] if headers and len(headers) > 1 else "업데이트 기록 없음"
+        except:
+            last_date = "-"
         if not df.empty:
             df['닉네임'] = df['닉네임'].astype(str)
             for c in ['현재 팬 수', '이번달 팬수']:
@@ -94,14 +101,16 @@ def show_home():
 <div class="stat-row">
 <div class="stat-item"><span class="stat-label">이번달 팬수</span><span class="stat-value">+{int(this_month_val):,}</span></div>
 <div class="stat-item stat-right"><span class="stat-label">현재 총 팬 수</span><span class="stat-value">{int(current):,}</span></div>
+<div class="update-info">최근 집계일: {last_update_date}</div>
 </div></div>
 """
         st.markdown(html_code, unsafe_allow_html=True)
 
 def show_list():
-    st.title("🏆 전체 랭킹")
+    st.title("전체 랭킹")
     if df.empty: return
-    tab1, tab2 = st.tabs(["🔥 이번달 팬수 순", "💎 총 팬 수 순"])
+        st.caption(f"데이터 기준: {last_update_date}")
+    tab1, tab2 = st.tabs(["이번달 팬수 순", "총 팬 수 순"])
     with tab1: st.dataframe(df.sort_values('이번달 팬수', ascending=False)[['닉네임', '이번달 팬수']], use_container_width=True, hide_index=True)
     with tab2: st.dataframe(df.sort_values('현재 팬 수', ascending=False)[['닉네임', '현재 팬 수']], use_container_width=True, hide_index=True)
 
@@ -109,5 +118,6 @@ if st.session_state.page == 'home': show_home()
 elif st.session_state.page == 'list': show_list()
 st.write("---")
 c1, c2 = st.columns(2)
-if c1.button("🏠 홈 (검색)"): st.session_state.page = 'home'; st.rerun()
-if c2.button("📋 랭킹 보기"): st.session_state.page = 'list'; st.rerun()
+if c1.button("홈 (검색)"): st.session_state.page = 'home'; st.rerun()
+
+if c2.button("랭킹 보기"): st.session_state.page = 'list'; st.rerun()

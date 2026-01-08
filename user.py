@@ -8,28 +8,36 @@ from textwrap import dedent
 FIXED_SHEET_URL = "https://docs.google.com/spreadsheets/d/18iVfULr8tjVB8FvZ1yfMuZhua2EDxRuwfut9k201_tI/edit?gid=19537121#gid=19537121"
 TARGET_GROWTH = 10000000 
 
-st.set_page_config(page_title="서클 현황", layout="wide", initial_sidebar_state="collapsed")
+# [핵심] 툴바 모드를 'minimal'로 설정 (코드 레벨에서 제어)
+st.set_page_config(page_title="서클 현황", layout="wide", initial_sidebar_state="collapsed", menu_items=None)
 
-# 🚨 [핵심] 모든 메뉴와 푸터, 헤더를 숨기는 강력한 CSS
+# 🚨 [Nuclear Option] 상단바, 푸터, 햄버거 메뉴 강제 제거 CSS
 st.markdown("""
 <style>
-    /* 1. 상단 헤더(햄버거 메뉴 포함) 숨기기 */
-    header[data-testid="stHeader"] {
-        visibility: hidden;
-        height: 0px;
+    /* 1. 상단 헤더 전체 숨기기 (Created by 포함) */
+    header {
+        visibility: hidden !important;
+        height: 0px !important;
+        padding: 0px !important;
     }
     
-    /* 2. 우측 상단 햄버거 메뉴, 배포 버튼 등 숨기기 */
-    #MainMenu {visibility: hidden;}
-    .stDeployButton {display:none;}
+    /* 2. 햄버거 메뉴, 설정 버튼 등 숨기기 */
+    #MainMenu {visibility: hidden !important;}
+    div[data-testid="stToolbar"] {display: none !important;}
+    div[data-testid="stDecoration"] {display: none !important;}
+    div[data-testid="stStatusWidget"] {display: none !important;}
     
-    /* 3. 하단 푸터 (Made with Streamlit) 숨기기 */
-    footer {visibility: hidden;}
+    /* 3. 하단 푸터 숨기기 */
+    footer {visibility: hidden !important; display: none !important;}
     
-    /* 4. 앱 배경 및 폰트 설정 */
+    /* 4. 앱 컨텐츠를 위로 끌어올리기 (헤더가 사라진 빈공간 채우기) */
+    .block-container {
+        padding-top: 0rem !important;
+        padding-bottom: 0rem !important;
+    }
+    
+    /* 디자인: 배경 및 카드 */
     .stApp { background-color: #121212; color: #E0E0E0; }
-    
-    /* 5. 카드 UI 디자인 */
     .user-card { background-color: #1E1E1E; border: 1px solid #333; border-radius: 16px; padding: 24px; margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.5); --prog-width: 0%; --prog-color: #555; }
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .user-name { font-size: 24px; font-weight: 700; color: #FFFFFF; }

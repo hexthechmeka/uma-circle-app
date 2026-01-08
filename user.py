@@ -3,12 +3,12 @@ import pandas as pd
 from google.oauth2 import service_account
 import gspread
 import os
+from textwrap import dedent
 
-# --- 설정 ---
 FIXED_SHEET_URL = "https://docs.google.com/spreadsheets/d/18iVfULr8tjVB8FvZ1yfMuZhua2EDxRuwfut9k201_tI/edit?gid=19537121#gid=19537121"
 TARGET_GROWTH = 10000000 
 
-st.set_page_config(page_title="서클 현황", layout="wide", page_icon="🐎")
+st.set_page_config(page_title="서클 현황", layout="wide")
 
 st.markdown("""
 <style>
@@ -37,7 +37,6 @@ if 'page' not in st.session_state: st.session_state.page = 'home'
 @st.cache_data(ttl=600)
 def load_data():
     try:
-        
         if "gcp_service_account" in st.secrets:
             creds = service_account.Credentials.from_service_account_info(st.secrets["gcp_service_account"])
             scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -46,33 +45,40 @@ def load_data():
             creds = service_account.Credentials.from_service_account_file("secret.json")
             scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
             creds = creds.with_scopes(scope)
-        else: return pd.DataFrame()
+        else: return pd.DataFrame(), "인증 실패"
 
         gc = gspread.authorize(creds)
-        ws = gc.open_by_url(FIXED_SHEET_URL).worksheet("1.메인_요약")
+        sh = gc.open_by_url(FIXED_SHEET_URL)
+        
+        ws = sh.worksheet("1.메인_요약")
         data = ws.get_all_records()
         df = pd.DataFrame(data)
+        
         try:
             ws_daily = sh.worksheet("2.일간_전체")
             headers = ws_daily.row_values(1)
-            last_date = headers[-1] if headers and len(headers) > 1 else "업데이트 기록 없음"
+            last_date = headers[-1] if headers and len(headers) > 1 else "기록 없음"
         except:
             last_date = "-"
+
         if not df.empty:
             df['닉네임'] = df['닉네임'].astype(str)
             for c in ['현재 팬 수', '이번달 팬수']:
                 if c in df.columns:
                     df[c] = df[c].astype(str).str.replace(',', '').apply(pd.to_numeric, errors='coerce').fillna(0)
-        return df
-    except: return pd.DataFrame()
+        
+        return df, last_date
 
-df = load_data()
+    except: return pd.DataFrame(), "로드 실패"
+
+df, last_update_date = load_data()
 
 def show_home():
-    st.title("🔍 내 기록 조회")
+    st.title("내 기록 조회")
     if df.empty:
         st.info("데이터가 준비되지 않았습니다.")
         return
+    
     search_query = st.text_input("닉네임 검색", placeholder="닉네임 입력...")
     target_user = None
     if search_query:
@@ -87,10 +93,10 @@ def show_home():
         is_done = pct >= 100
         fill_width = min(pct, 100)
         bar_color = "#00E676" if is_done else "#FF5252"
-        badge_txt = "🎉 할당량 달성" if is_done else f"🔥 {100-pct:.1f}% 남음"
+        badge_txt = "할당량 달성" if is_done else f"{100-pct:.1f}% 남음"
         text_cls = "text-dark" if is_done else ""
 
-        html_code = f"""
+        html_code = dedent(f"""
 <div class="user-card" style="--prog-width: {fill_width}%; --prog-color: {bar_color};">
 <div class="card-header">
 <div class="user-name">{target_user['닉네임']}</div>
@@ -101,15 +107,18 @@ def show_home():
 <div class="stat-row">
 <div class="stat-item"><span class="stat-label">이번달 팬수</span><span class="stat-value">+{int(this_month_val):,}</span></div>
 <div class="stat-item stat-right"><span class="stat-label">현재 총 팬 수</span><span class="stat-value">{int(current):,}</span></div>
-<div class="update-info">최근 집계일: {last_update_date}</div>
-</div></div>
-"""
+</div>
+<div class="update-info">기준일: {last_update_date}</div>
+</div>
+""")
         st.markdown(html_code, unsafe_allow_html=True)
 
 def show_list():
     st.title("전체 랭킹")
     if df.empty: return
+    
     st.caption(f"데이터 기준: {last_update_date}")
+    
     tab1, tab2 = st.tabs(["이번달 팬수 순", "총 팬 수 순"])
     with tab1: st.dataframe(df.sort_values('이번달 팬수', ascending=False)[['닉네임', '이번달 팬수']], use_container_width=True, hide_index=True)
     with tab2: st.dataframe(df.sort_values('현재 팬 수', ascending=False)[['닉네임', '현재 팬 수']], use_container_width=True, hide_index=True)
@@ -119,6 +128,4 @@ elif st.session_state.page == 'list': show_list()
 st.write("---")
 c1, c2 = st.columns(2)
 if c1.button("홈 (검색)"): st.session_state.page = 'home'; st.rerun()
-
 if c2.button("랭킹 보기"): st.session_state.page = 'list'; st.rerun()
-

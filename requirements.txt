@@ -1,0 +1,8 @@
+streamlit
+pandas
+google-cloud-vision
+google-auth
+gspread
+opencv-python-headless
+thefuzz
+numpy
